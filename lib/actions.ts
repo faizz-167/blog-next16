@@ -1,10 +1,11 @@
 "use server";
 
-import { api } from "@/convex/_generated/api";
-import { fetchAuthMutation, isAuthenticated } from "@/lib/auth-server";
-import { redirect } from "next/navigation";
-import { ROUTES } from "@/constants/Routes";
-import { Id } from "@/convex/_generated/dataModel";
+import {api} from "@/convex/_generated/api";
+import {fetchAuthMutation, isAuthenticated} from "@/lib/auth-server";
+import {redirect} from "next/navigation";
+import {ROUTES} from "@/constants/Routes";
+import {Id} from "@/convex/_generated/dataModel";
+import {revalidatePath} from "next/dist/server/web/spec-extension/revalidate";
 
 interface Props {
   title: string;
@@ -28,6 +29,6 @@ export const createBlogAction = async (payload: Props) => {
     content,
     imageStorageId: imageStorageId,
   });
-
-  redirect(ROUTES.BLOGS);
+  revalidatePath(ROUTES.BLOGS);  // revalidate the blogs page based on demand
+  return redirect(ROUTES.BLOGS);
 };

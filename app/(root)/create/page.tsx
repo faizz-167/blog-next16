@@ -30,8 +30,8 @@ const Page = () => {
         startTransition(async () => {
             const file = data.image as File | undefined;
 
+            let storageId: Id<"_storage"> | undefined;
             try {
-                let storageId: Id<"_storage">;
 
                 if (file) {
                     // 1. Get upload URL (Convex returns STRING)
@@ -66,9 +66,9 @@ const Page = () => {
                 });
 
             } catch (err) {
-                console.error("Upload/create blog error:", err);
-                toast.error("Upload failed");
+                throw new Error(err as string || "Failed to create blog")
             }
+            toast.success("Blog created successfully")
         });
     };
 

@@ -2,10 +2,13 @@ import React, {Suspense} from 'react'
 import {api} from "@/convex/_generated/api";
 import {Card, CardContent, CardFooter} from "@/components/ui/card";
 import Image from 'next/image'
-import Link from "next/dist/client/link";
+import Link from "next/link";
 import {ROUTES} from "@/constants/Routes";
 import {fetchQuery} from "convex/nextjs";
 import {Skeleton} from "@/components/ui/skeleton";
+
+export const dynamic = "force-static";
+// export const revalidate = 60; - revalidate the page every 60 seconds
 
 const Page = () => {
     // const blogs = useQuery(api.blogs.getBlogs) --CSR
@@ -45,7 +48,13 @@ const LoadingBlogList = async () => {
             {blogs?.map((blog) => (
                 <Card key={blog._id} className="pt-1 px-1">
                     <div className="relative h-48 w-full overflow-hidden">
-                        <Image src="https://images.unsplash.com/photo-1702541660859-ed9f8c632462?q=80&w=2064&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" loading="lazy" alt={blog.title} fill />
+                        <Image
+                            src={blog.imageUrl ?? "https://images.unsplash.com/photo-1702541660859-ed9f8c632462?q=80&w=2064&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+                            alt={blog.title}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                        />
                     </div>
                     <CardContent>
                         <Link href={ROUTES.BLOG(blog._id)}>

@@ -1,6 +1,6 @@
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
-import { authComponent } from "@/convex/auth";
+import {mutation, query} from "./_generated/server";
+import {v} from "convex/values";
+import {authComponent} from "@/convex/auth";
 
 export const createBlog = mutation({
   args: {
@@ -28,7 +28,19 @@ export const createBlog = mutation({
 export const getBlogs = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("blog").order("desc").collect();
+    const blogs = await ctx.db.query("blog").order("desc").collect();
+    return await Promise.all(
+        blogs.map(async (blog) => {
+          const resolvedImageUrl = blog.imageStorageId !== undefined
+            ? await ctx.storage.getUrl(blog.imageStorageId)
+            : null;
+
+          return {
+            ...blog,
+            imageUrl: resolvedImageUrl,
+          };
+        })
+    )
   },
 });
 
@@ -38,3 +50,22 @@ export const generateImageUpload = mutation({
     return await ctx.storage.generateUploadUrl();
   },
 });
+
+export const getPostById = query({
+  args: {
+    id: v.id("blog"),
+  },
+  handler: async (ctx, args) => {
+    const blog = await ctx.db.get("blog", args.id);
+    if (!blog) {
+      throw new Error("Blog not found");
+    }
+    const resolvedUrl = blog?.imageStorageId !== undefined
+        ? await ctx.storage.getUrl(blog.imageStorageId)
+        : null
+    return {
+      ...blog,
+      imageUrl: resolvedUrl,
+    }
+  }
+})
