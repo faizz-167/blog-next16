@@ -12,12 +12,10 @@ import z from "zod";
 import {Textarea} from "@/components/ui/textarea";
 import {createBlogAction} from "@/lib/actions";
 import {toast} from "sonner";
-import {api} from "@/convex/_generated/api";
-import {useMutation} from "convex/react";
+import {Id} from "@/convex/_generated/dataModel";
 
 const Page = () => {
     const [isPending, startTransition] = useTransition()
-    const generateUploadUrl = useMutation(api.blogs.generateImageUpload);
     const form = useForm({
         resolver: zodResolver(blogSchema),
         defaultValues: {
@@ -27,57 +25,53 @@ const Page = () => {
         }
     })
     // client component (Page)
+
     const onSubmit = (data: z.infer<typeof blogSchema>) => {
         startTransition(async () => {
+            const file = data.image as File | undefined;
+
             try {
-                // generateUploadUrl returns a short-lived POST URL (string)
-                const postUrl = await generateUploadUrl();
-                if (!postUrl || typeof postUrl !== "string") {
-                    throw new Error("Invalid upload URL received from server");
+                let storageId: Id<"_storage">;
+
+                if (file) {
+                    // 1. Get upload URL (Convex returns STRING)
+                    const urlRes = await fetch("/api/upload-url", { method: "POST" });
+                    if (!urlRes.ok) throw new Error("Failed to get upload URL");
+
+                    const uploadUrl: string = await urlRes.json();
+
+                    // 2. Upload file
+                    const uploadResult = await fetch(uploadUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": file.type,
+                        },
+                        body: file,
+                    });
+
+                    if (!uploadResult.ok) {
+                        throw new Error("File upload failed");
+                    }
+
+                    // 3. Extract storageId
+                    const { storageId: id } = await uploadResult.json();
+                    storageId = id;
                 }
 
-                const file = data.image;
-                if (!file) {
-                    throw new Error("No file selected");
-                }
-                if (!file.type) {
-                    throw new Error("File has no mime type");
-                }
-
-                const result = await fetch(postUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": file.type,
-                        // optional: include a Digest header if you compute it; not required
-                    },
-                    body: file,
-                });
-
-                if (!result.ok) {
-                    const text = await result.text();
-                    throw new Error(`Upload failed: ${result.status} ${text}`);
-                }
-
-                const json = await result.json();
-                const storageId = json?.storageId;
-                if (!storageId) {
-                    throw new Error("Upload response did not contain storageId");
-                }
-
-                // Call the server action that saves the small payload (storage id) to DB
+                // 4. Create blog (auth-protected)
                 await createBlogAction({
                     title: data.title,
                     content: data.content,
                     imageStorageId: storageId,
                 });
 
-                toast.success("Blog created!");
             } catch (err) {
                 console.error("Upload/create blog error:", err);
                 toast.error("Upload failed");
             }
         });
     };
+
 
 
     return (

@@ -10,9 +10,9 @@ const convex = new ConvexReactClient(
 );
 
 export function ConvexClientProvider({
-                                         children,
-                                         initialToken,
-                                     }: {
+         children,
+         initialToken,
+     }: {
     children: ReactNode;
     initialToken?: string | null;
 }) {
