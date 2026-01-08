@@ -11,9 +11,13 @@ import {Button} from "@/components/ui/button";
 import {authClient} from "@/lib/auth-client";
 import z from "zod";
 import {Loader2} from "lucide-react";
+import {toast} from "sonner";
+import {ROUTES} from "@/constants/Routes";
+import {useRouter} from "next/navigation";
 
 const SignUp = () => {
     const [isPending, startTransition] = useTransition()
+    const router = useRouter();
     const form = useForm({
         resolver: zodResolver(signUpSchema),
         defaultValues: {
@@ -29,6 +33,9 @@ const SignUp = () => {
                 password: data.password,
                 name: data.name,
             })
+            toast.success("Sign up successful")
+            form.reset()
+            router.push(ROUTES.HOME)
         })
     };
     return (

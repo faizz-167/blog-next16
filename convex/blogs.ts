@@ -1,6 +1,13 @@
 import {mutation, query} from "./_generated/server";
 import {v} from "convex/values";
 import {authComponent} from "@/convex/auth";
+import {Doc, Id} from "@/convex/_generated/dataModel";
+
+interface SearchPostResult {
+    _id: Id<'blog'>
+    title: string
+    content: string
+}
 
 export const createBlog = mutation({
   args: {
@@ -16,7 +23,7 @@ export const createBlog = mutation({
       throw new Error("Not authenticated");
     }
 
-    await ctx.db.insert("blog", {
+    return await ctx.db.insert("blog", {
       title: args.title,
       content: args.content,
       authorId: user._id,
@@ -67,5 +74,49 @@ export const getPostById = query({
       ...blog,
       imageUrl: resolvedUrl,
     }
+  }
+})
+
+export const searchPost = query({
+  args: {
+    term: v.string(),
+    limit: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit
+    const result: SearchPostResult[] = [];
+    const seen = new Set()
+
+    const pushDocs = async (docs: Array<Doc<'blog'>>) => {
+      for (const doc of docs) {
+        if (seen.has(doc._id))continue;
+        seen.add(doc._id);
+        result.push({
+          _id: doc._id,
+          title: doc.title,
+          content: doc.content
+        });
+        if (result.length >= limit) break;
+      }
+    }
+
+    const searchTitles = await ctx.db
+        .query("blog")
+        .withSearchIndex(
+            "search_title",
+            (q) => q.search("title", args.term))
+        .take(limit)
+
+    await pushDocs(searchTitles)
+    if (result.length < limit) {
+      const contentMatches = await ctx.db
+          .query("blog")
+          .withSearchIndex(
+              "search_content",
+              (q) => q.search("content", args.term))
+          .take(limit)
+      await pushDocs(contentMatches)
+    }
+    return result
   }
 })

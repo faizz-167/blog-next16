@@ -3,11 +3,15 @@ import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {ArrowLeft} from "lucide-react";
 import Image from "next/image";
-import {fetchQuery} from "convex/nextjs";
+import {fetchQuery, preloadQuery} from "convex/nextjs";
 import {api} from "@/convex/_generated/api";
 import {Id} from "@/convex/_generated/dataModel";
 import {ROUTES} from "@/constants/Routes";
 import {Separator} from "@/components/ui/separator";
+import {CommentsSection} from "@/components/web/CommentsSection";
+import {PostPresence} from "@/components/web/PostPresence";
+import {fetchAuthQuery} from "@/lib/auth-server";
+import {redirect} from "next/navigation";
 
 interface Props {
     params: Promise<{
@@ -17,7 +21,14 @@ interface Props {
 
 const Page = async ({params}: Props) => {
     const {id} = await params;
-    const blog = await fetchQuery(api.blogs.getPostById, { id: id })
+    const [blog, preloadComments, userId] = await Promise.all([
+        await fetchQuery(api.blogs.getPostById, { id: id }),
+        await preloadQuery(api.comments.getCommentsByPost, { blogId: id }),
+        await fetchAuthQuery(api.presence.getUserId)
+    ])
+
+    if (!userId) redirect(ROUTES.SIGN_IN)
+
     if (!blog) {
         return <div>
             <h1 className="text-3xl font-bold text-muted-foreground py-20">No Blogs Found</h1>
@@ -42,11 +53,15 @@ const Page = async ({params}: Props) => {
             </div>
             <div className="space-y-4 flex flex-col">
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">{blog.title}</h1>
-                <p className="text-sm text-muted-foreground">Posted on: {new Date(blog._creationTime).toLocaleDateString()}</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">Posted on: {new Date(blog._creationTime).toLocaleDateString()}</p>
+                    {userId && <PostPresence roomId={blog._id} userId={userId} />}
+                </div>
             </div>
             <Separator className="my-4" />
             <p className="text-md leading-relaxed text-foreground/90 whitespace-pre-wrap">{blog.content}</p>
             <Separator className="my-4" />
+            <CommentsSection preloadedComments={preloadComments} />
         </main>
     )
 }
