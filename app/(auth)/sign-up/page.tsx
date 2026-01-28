@@ -27,16 +27,20 @@ const SignUp = () => {
         }
     })
     const onSubmit = (data: z.infer<typeof signUpSchema>) => {
-        startTransition(async () => {
-            await authClient.signUp.email({
-                email: data.email,
-                password: data.password,
-                name: data.name,
+        try {
+            startTransition(async () => {
+                await authClient.signUp.email({
+                    email: data.email,
+                    password: data.password,
+                    name: data.name,
+                })
+                toast.success("Sign up successful")
+                form.reset()
+                router.push(ROUTES.HOME)
             })
-            toast.success("Sign up successful")
-            form.reset()
-            router.push(ROUTES.HOME)
-        })
+        } catch (error) {
+            toast.error("Something went wrong")
+        }
     };
     return (
         <Card>
