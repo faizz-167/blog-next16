@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextBlog – Full-Stack Blog Application (Next.js 16 + Convex)
 
-## Getting Started
+NextBlog is a modern full-stack blogging platform built with **Next.js 16 (App Router)**, **Convex** as the backend/database, **Better Auth** for authentication, **Tailwind CSS v4**, and **shadcn/ui (Base UI)** components.
 
-First, run the development server:
+It supports:
+- Email & password authentication
+- Creating and viewing blog posts
+- Image uploads (Convex Storage)
+- Comments on blog posts
+- Real-time presence (viewers on a post)
+- Dark / light theme toggle
+- Static + dynamic rendering with Suspense
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Tech Stack
+
+### Frontend
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui (Base UI)
+- React Hook Form + Zod
+- Sonner (toast notifications)
+- next-themes (dark/light mode)
+
+### Backend
+- Convex (database, queries, mutations, storage)
+- Convex Presence
+- Better Auth (email/password auth)
+
+---
+
+## Project Structure (High Level)
+
+```text
+app/                → Next.js app router
+components/         → UI + web components
+convex/             → Convex backend (schema, queries, mutations)
+lib/                → Server actions, auth helpers, utilities
+schemas/            → Zod validation schemas
+constants/          → Routes and navigation constants
+```
+Prerequisites
+
+Make sure you have the following installed:
+
+Node.js ≥ 18
+
+pnpm (recommended package manager)
+
+Convex CLI
+
+Install Convex CLI globally:
+
+```
+npm install -g convex
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a .env.local file in the root of the project.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+# Convex
+NEXT_PUBLIC_CONVEX_URL=
+NEXT_PUBLIC_CONVEX_SITE_URL=
 
-## Learn More
+# Site URL (used by Better Auth)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SITE_URL=http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+You will get NEXT_PUBLIC_CONVEX_URL and NEXT_PUBLIC_CONVEX_SITE_URL after creating a Convex project.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Setup & Installation
+1. Install Dependencies
+   ```
+   pnpm install
+   ```
+2. Create a Convex Project
+   ```
+   convex dev
+   ```
+This will:
 
-## Deploy on Vercel
+Create a Convex project
+Generate backend files
+Start the Convex dev server
+Ask you to log in if needed
+After setup, Convex will generate:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+convex/_generated/
+```
+3. Run the Development Server
+In a new terminal:
+```
+pnpm dev
+```
+The app will be available at:
+```
+http://localhost:3000
+```
+How Authentication Works
+Uses Better Auth + Convex
+Email & password authentication
+Session handled via cookies
+Protected routes:
+/create
+/blogs/[id]
+Unauthenticated users are redirected to /sign-in
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+How Image Upload Works
+Client requests an upload URL from:
+```
+POST /api/upload-url
+```
+Convex generates a temporary upload URL
+Image is uploaded directly to Convex Storage
+storageId is saved with the blog post
+Image URL is resolved using ctx.storage.getUrl()
+
+| Route         | Description                       |
+| ------------- | --------------------------------- |
+| `/`           | Home page                         |
+| `/sign-in`    | User login                        |
+| `/sign-up`    | User registration                 |
+| `/blogs`      | List all blogs                    |
+| `/blogs/[id]` | Single blog post + comments       |
+| `/create`     | Create a new blog (auth required) |
+
